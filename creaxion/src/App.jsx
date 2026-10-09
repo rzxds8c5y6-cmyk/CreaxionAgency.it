@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { ShopPage } from "./Shop.jsx";
 
 // ─── DATA ──────────────────────────────────────────────────────────────────────
 
@@ -9,6 +10,7 @@ const pages = [
   ["clienti", "Clienti"],
   ["progetti", "Progetti"],
   ["processo", "Processo"],
+    ["shop", "Shop"],
   ["contatti", "Contatti"],
 ];
 
@@ -972,8 +974,9 @@ function Footer({ setPage }) {
 // ─── ROOT ─────────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [page, setPage] = useState("home");
-
+    const [page, setPage] = useState(() =>
+    new URLSearchParams(window.location.search).get("checkout") ? "shop" : "home"
+  );
   // Scroll to top on page change
   const navigate = useCallback((key) => {
     setPage(key);
@@ -994,6 +997,7 @@ export default function App() {
       case "clienti":  return <ClientiPage {...props} />;
       case "progetti": return <ProgettiPage {...props} />;
       case "processo": return <ProcessoPage {...props} />;
+      case "shop":     return <ShopPage />;
       case "contatti": return <ContattiPage />;
       default:         return <HomePage {...props} />;
     }
