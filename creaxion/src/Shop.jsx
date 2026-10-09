@@ -142,3 +142,282 @@ function CustomizeModal({ product, onClose, onAdd }) {
     for (const file of chosen) {
       const id = crypto.randomUUID();
       if (!ALLOWED_TYPES.includes(file.type) && !/\.(ai|eps|psd)$/i.test(file.name)) {
+        setError("Formati accettati: PNG, JPG, WEBP, SVG, PDF, AI, EPS, PSD.");
+        continue;
+      }
+      if (file.size > MAX_FILE_MB * 1024 * 1024) {
+        setError(`"${file.name}" supera i ${MAX_FILE_MB} MB.`);
+        continue;
+      }
+      setFiles((l) => [...l, { id, name: file.name, status: "uploading", progress: 0 }]);
+      try {
+        const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const blob = await upload(`ordini/${id.slice(0, 8)}.${ext}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+          contentType: file.type || undefined,
+          onUploadProgress: ({ percentage }) => patch(id, { progress: Math.round(percentage) }),
+        });
+        patch(id, { status: "done", progress: 100, url: blob.url });
+      } catch {
+        patch(id, { status: "error" });
+        setError(`Caricamento di "${file.name}" non riuscito. Riprova.`);
+      }
+    }
+  };
+
+  const unitTotal = product.price * quantity;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={`Personalizza ${product.name}`}>
+      <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-3xl border border-white/10 bg-zinc-950 p-7 sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-display text-2xl font-bold">{product.name}</h3>
+            <p className="mt-1 text-sm text-white/50">{eur(product.price)} · {product.unit}</p>
+          </div>
+          <button onClick={onClose} aria-label="Chiudi" className="rounded-full border border-white/10 p-2 text-white/60 hover:text-white">
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+
+        {/* Quantità */}
+        <label className="mt-6 block text-sm font-medium text-white/80" htmlFor="qty">
+          Quantità {product.min > 1 && <span className="text-white/40">(minimo {product.min})</span>}
+        </label>
+        <div className="mt-2 inline-flex items-center rounded-full border border-white/10">
+          <button type="button" onClick={() => setQuantity((q) => Math.max(product.min, q - 1))} className="h-11 w-11 text-lg text-white/70 hover:text-white" aria-label="Diminuisci">−</button>
+          <input
+            id="qty" type="number" inputMode="numeric" min={product.min} max={product.max} value={quantity}
+            onChange={(e) => setQuantity(Math.min(product.max, Math.max(product.min, Number(e.target.value) || product.min)))}
+            className="w-16 bg-transparent text-center text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <button type="button" onClick={() => setQuantity((q) => Math.min(product.max, q + 1))} className="h-11 w-11 text-lg text-white/70 hover:text-white" aria-label="Aumenta">+</button>
+        </div>
+
+        {/* Upload */}
+        <div className="mt-6">
+          <div className="text-sm font-medium text-white/80">File per la personalizzazione</div>
+          <label
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+            className="mt-2 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-white/20 bg-black/40 px-5 py-8 text-center transition hover:border-cyan-400/60"
+          >
+            <span className="text-cyan-300"><ShopIcon name="upload" size={24} /></span>
+            <span className="text-sm text-white/70">Trascina qui i file o <span className="text-cyan-400 underline">sfoglia</span></span>
+            <span className="text-xs text-white/35">Logo, grafiche, PDF · fino a {MAX_FILES_PER_ITEM} file, {MAX_FILE_MB} MB ciascuno</span>
+            <input type="file" multiple className="sr-only" disabled={files.length >= MAX_FILES_PER_ITEM}
+              accept=".png,.jpg,.jpeg,.webp,.svg,.pdf,.ai,.eps,.psd"
+              onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+          </label>
+
+          {files.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {files.map((f) => (
+                <li key={f.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                  <span className="text-white/50"><ShopIcon name="file" /></span>
+                  <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                  {f.status === "uploading" && <span className="text-xs text-cyan-400">{f.progress}%</span>}
+                  {f.status === "done" && <span className="text-cyan-400"><Icon name="check" size={16} /></span>}
+                  {f.status === "error" && <span className="text-xs text-red-400">Errore</span>}
+                  <button onClick={() => setFiles((l) => l.filter((x) => x.id !== f.id))} aria-label={`Rimuovi ${f.name}`} className="text-white/40 hover:text-white">
+                    <ShopIcon name="trash" size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Note */}
+        <label className="mt-6 block text-sm font-medium text-white/80" htmlFor="note">Note per la stampa</label>
+        <textarea
+          id="note" rows={3} maxLength={480} value={note} onChange={(e) => setNote(e.target.value)}
+          placeholder="Colori, taglie, posizione del logo, testi da inserire…"
+          className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm outline-none placeholder:text-white/30 focus:border-cyan-400/60"
+        />
+
+        {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
+
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <div className="font-display text-2xl font-extrabold">{eur(unitTotal)}</div>
+          <Button
+            disabled={uploading}
+            onClick={() => onAdd({
+              productId: product.id, quantity, note: note.trim(),
+              files: ready.map((f) => ({ name: f.name, url: f.url })),
+            })}
+          >
+            {uploading ? "Caricamento…" : "Aggiungi al carrello"}
+          </Button>
+        </div>
+        {ready.length === 0 && !uploading && (
+          <p className="mt-3 text-xs text-white/35">Puoi aggiungere al carrello anche senza file e inviarli dopo via email.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CARRELLO LATERALE ─────────────────────────────────────────────────────────
+
+function CartDrawer({ cart, onClose }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const checkout = async () => {
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.items.map((i) => ({
+            productId: i.productId, quantity: i.quantity, note: i.note, files: i.files.map((f) => f.url),
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Errore");
+      window.location.href = data.url; // pagamento su Stripe
+    } catch (e) {
+      setError(`Non è stato possibile avviare il pagamento: ${e.message}`);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex justify-end bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-md flex-col border-l border-white/10 bg-zinc-950" aria-label="Carrello">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+          <h3 className="font-display text-xl font-bold">Il tuo carrello</h3>
+          <button onClick={onClose} aria-label="Chiudi carrello" className="rounded-full border border-white/10 p-2 text-white/60 hover:text-white"><Icon name="close" size={16} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {cart.items.length === 0 ? (
+            <p className="mt-10 text-center text-white/50">Il carrello è vuoto. Scegli un prodotto e carica i tuoi file per iniziare.</p>
+          ) : (
+            <ul className="space-y-4">
+              {cart.items.map((i) => {
+                const p = CATALOG.find((x) => x.id === i.productId);
+                if (!p) return null;
+                return (
+                  <li key={i.uid} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex justify-between gap-3">
+                      <div>
+                        <div className="font-semibold">{p.name}</div>
+                        <div className="text-xs text-white/45">{i.quantity} × {eur(p.price)} ({p.unit})</div>
+                      </div>
+                      <div className="font-semibold">{eur(p.price * i.quantity)}</div>
+                    </div>
+                    {i.files.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {i.files.map((f) => (
+                          <span key={f.url} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1 text-xs text-cyan-300">
+                            <ShopIcon name="file" size={12} /><span className="truncate">{f.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {i.note && <p className="mt-3 text-xs leading-5 text-white/50">{i.note}</p>}
+                    <button onClick={() => cart.remove(i.uid)} className="mt-3 inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400">
+                      <ShopIcon name="trash" size={13} /> Rimuovi
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {cart.items.length > 0 && (
+          <div className="border-t border-white/10 px-6 py-5">
+            <div className="flex items-center justify-between">
+              <span className="text-white/60">Totale</span>
+              <span className="font-display text-2xl font-extrabold">{eur(cart.total)}</span>
+            </div>
+            <p className="mt-1 text-xs text-white/35">Spedizione e IVA indicate nel passaggio di pagamento.</p>
+            {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
+            <Button onClick={checkout} disabled={busy} className="mt-4 w-full justify-center">
+              {busy ? "Reindirizzamento a Stripe…" : <>Paga con Stripe <Icon name="arrow" size={16} /></>}
+            </Button>
+          </div>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+// ─── PAGINA SHOP ───────────────────────────────────────────────────────────────
+
+export function ShopPage() {
+  const cart = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [status, setStatus] = useState(null);
+  const dismissStatus = () => setStatus(null);
+
+  // Ritorno da Stripe: l'indirizzo contiene ?checkout=success oppure ?checkout=cancel
+  useEffect(() => {
+    const result = new URLSearchParams(window.location.search).get("checkout");
+    if (result === "success" || result === "cancel") {
+      setStatus(result);
+      if (result === "success") cart.clear();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Container>
+      <section className="py-20">
+        {status && (
+          <div
+            role="status"
+            className={`mb-10 flex items-start justify-between gap-4 rounded-2xl border p-5 ${
+              status === "success" ? "border-cyan-400/30 bg-cyan-400/5" : "border-white/15 bg-white/[0.03]"
+            }`}
+          >
+            <p className="text-sm leading-6 text-white/80">
+              {status === "success"
+                ? "Pagamento ricevuto, grazie! Abbiamo i tuoi file e ti scriviamo a breve per confermare i dettagli della stampa."
+                : "Pagamento annullato. Il carrello è ancora qui: puoi riprendere quando vuoi."}
+            </p>
+            <button onClick={dismissStatus} aria-label="Chiudi messaggio" className="text-white/40 hover:text-white"><Icon name="close" size={16} /></button>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <SectionTitle
+            eyebrow="Shop"
+            title="Scegli il prodotto, carica i tuoi file, noi lo personalizziamo."
+            text="Ogni articolo viene stampato sulla tua grafica. Paghi online in sicurezza con Stripe."
+          />
+          <Button variant="secondary" onClick={() => setCartOpen(true)}>
+            <ShopIcon name="cart" size={16} /> Carrello ({cart.count})
+          </Button>
+        </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3 animate-stagger">
+          {CATALOG.map((p) => (
+            <ProductCard key={p.id} product={p} onSelect={setSelected} />
+          ))}
+        </div>
+
+        <p className="mt-10 text-sm text-white/40">
+          Hai bisogno di una grafica nuova o di un prodotto che non trovi qui? Scrivici dalla pagina Contatti.
+        </p>
+      </section>
+
+      {selected && (
+        <CustomizeModal
+          product={selected}
+          onClose={() => setSelected(null)}
+          onAdd={(item) => { cart.add(item); setSelected(null); setCartOpen(true); }}
+        />
+      )}
+      {cartOpen && <CartDrawer cart={cart} onClose={() => setCartOpen(false)} />}
+    </Container>
+  );
+}
