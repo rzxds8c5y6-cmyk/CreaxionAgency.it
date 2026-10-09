@@ -969,7 +969,37 @@ function Footer({ setPage }) {
     </footer>
   );
 }
+function ShopPage({ navigate }) {
+  return (
+    <div className="min-h-screen bg-black text-white px-6 py-24">
+      <div className="max-w-7xl mx-auto">
+        <p className="text-cyan-400 uppercase tracking-widest text-sm mb-4">
+          CreaXion Shop
+        </p>
 
+        <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          Dai forma alle tue idee.
+        </h1>
+
+        <p className="text-white/60 max-w-2xl text-lg mb-12">
+          Stampa, espositori, materiali promozionali e soluzioni personalizzate
+          per il tuo brand.
+        </p>
+
+        <div className="border border-white/10 rounded-2xl p-8 bg-white/[0.03]">
+          <h2 className="text-2xl font-semibold mb-3">
+            Shop in costruzione
+          </h2>
+
+          <p className="text-white/60">
+            Presto potrai scegliere i prodotti, caricare la tua grafica,
+            aggiungerli al carrello e completare l'ordine online.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 // ─── ROOT ─────────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -991,8 +1021,13 @@ export default function App() {
     const props = { setPage: navigate };
     switch (page) {
       case "agenzia":  return <AgenziaPage {...props} />;
-      case "servizi":  return <ServiziPage {...props} />;
-      case "clienti":  return <ClientiPage {...props} />;
+      case "servizi":
+  return <ServiziPage navigate={navigate} />;
+
+case "shop":
+  return <ShopPage navigate={navigate} />;
+
+case "clienti":
       case "progetti": return <ProgettiPage {...props} />;
       case "processo": return <ProcessoPage {...props} />;
       case "contatti": return <ContattiPage />;
