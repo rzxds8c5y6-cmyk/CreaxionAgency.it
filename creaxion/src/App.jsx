@@ -6,6 +6,7 @@ const pages = [
   ["home", "Home"],
   ["agenzia", "Agenzia"],
   ["servizi", "Servizi"],
+  ["shop", "Shop"],
   ["clienti", "Clienti"],
   ["progetti", "Progetti"],
   ["processo", "Processo"],
