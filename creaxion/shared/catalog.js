@@ -75,6 +75,11 @@ export const CATALOG = [
     description: "Maglietta personalizzata con il tuo logo o la tua grafica. Indica taglie e colori.",
     price: 800, from: true, unit: "pezzo", min: 1, max: 1000, ...CLOTHING_NOTE,
   },
+    {
+    id: "polo", category: "abbigliamento", name: "Polo personalizzata",
+    description: "Polo personalizzata con il tuo logo. Indica taglie e colori.",
+    price: 1200, unit: "pezzo", min: 1, max: 1000, ...CLOTHING_NOTE,
+  },
   {
     id: "grembiule", category: "abbigliamento", name: "Grembiule da lavoro",
     description: "Grembiule da lavoro personalizzato con il tuo logo.",
