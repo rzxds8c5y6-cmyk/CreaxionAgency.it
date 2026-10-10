@@ -60,11 +60,11 @@ export default async function handler(req, res) {
 
     // Spedizione (con bollo incluso quando dovuto)
     const ship = calcShipping(subtotal);
-    let shippingName = "Spedizione inclusa";
+       let shippingName = "Standard (inclusa)";
     if (ship.total > 0) {
       shippingName = ship.bollo
-        ? `Spedizione (${euro(SHIPPING.cost)}) + imposta di bollo (${euro(SHIPPING.bollo)})`
-        : `Spedizione (${euro(SHIPPING.cost)})`;
+        ? `Standard: ${euro(SHIPPING.cost)} + imposta di bollo ${euro(SHIPPING.bollo)}`
+        : `Standard: ${euro(SHIPPING.cost)}`;
     }
     metadata.bollo_incluso = ship.bollo ? "si" : "no";
     metadata.regime = "forfettario - operazione senza IVA";
