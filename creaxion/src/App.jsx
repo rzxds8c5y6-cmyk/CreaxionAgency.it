@@ -1007,7 +1007,7 @@ export default function App() {
       case "clienti":  return <ClientiPage  {...props} />;
       case "progetti": return <ProgettiPage {...props} />;
       case "processo": return <ProcessoPage {...props} />;
-      case "shop":     return <ShopPage />;
+      case "shop":     return <ShopPage setPage={navigate} />;
       case "contatti": return <ContattiPage />;
       case "privacy":  return <PrivacyPage />;
       default:         return <HomePage    {...props} />;
