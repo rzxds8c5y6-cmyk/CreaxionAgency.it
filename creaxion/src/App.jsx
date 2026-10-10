@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { ShopPage } from "./Shop.jsx";
 
 // ─── DATA ──────────────────────────────────────────────────────────────────────
 
@@ -9,6 +10,7 @@ const pages = [
   ["clienti", "Clienti"],
   ["progetti", "Progetti"],
   ["processo", "Processo"],
+  ["shop", "Shop"],
   ["contatti", "Contatti"],
 ];
 
@@ -965,7 +967,9 @@ function CookieBanner({ onAccept, onShowPrivacy }) {
 // ─── ROOT ─────────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [page, setPage] = useState("home");
+    const [page, setPage] = useState(() =>
+    new URLSearchParams(window.location.search).get("checkout") ? "shop" : "home"
+  );
   const [cookieAccepted, setCookieAccepted] = useState(
     () => typeof localStorage !== "undefined" && localStorage.getItem("cookie_accepted") === "1"
   );
@@ -991,7 +995,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const titles = { agenzia: "Agenzia", servizi: "Servizi", clienti: "Clienti", progetti: "Progetti", processo: "Processo", contatti: "Contatti", privacy: "Privacy Policy" };
+    const titles = { agenzia: "Agenzia", servizi: "Servizi", clienti: "Clienti", progetti: "Progetti", processo: "Processo", contatti: "Contatti", shop: "Shop", privacy: "Privacy Policy" };
     document.title = `${titles[page] ?? "Home"} — CreaXion Agency`;
   }, [page]);
 
@@ -1003,6 +1007,7 @@ export default function App() {
       case "clienti":  return <ClientiPage  {...props} />;
       case "progetti": return <ProgettiPage {...props} />;
       case "processo": return <ProcessoPage {...props} />;
+      case "shop":     return <ShopPage />;
       case "contatti": return <ContattiPage />;
       case "privacy":  return <PrivacyPage />;
       default:         return <HomePage    {...props} />;
