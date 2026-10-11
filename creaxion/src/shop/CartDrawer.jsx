@@ -2,8 +2,9 @@ import { useState } from "react";
 import { CATALOG, SHIPPING } from "../../shared/catalog.js";
 import { eur, Icon, Button } from "./ui.jsx";
 
-export function CartDrawer({ cart, onClose }) {
+export function CartDrawer({ cart, onClose, onNavigate }) {
   const [busy, setBusy] = useState(false);
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
 
   const checkout = async () => {
@@ -13,6 +14,7 @@ export function CartDrawer({ cart, onClose }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          terms: accepted,
           items: cart.items.map((i) => ({
             productId: i.productId, quantity: i.quantity, note: i.note, files: i.files.map((f) => f.url),
           })),
@@ -99,7 +101,24 @@ export function CartDrawer({ cart, onClose }) {
             </div>
             <p className="mt-1 text-xs text-white/35">Prezzi senza IVA: operazione effettuata in regime forfettario.</p>
             {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
-            <Button onClick={checkout} disabled={busy} className="mt-4 w-full justify-center">
+            <label className="mt-4 flex items-start gap-3 text-xs leading-5 text-white/60">
+              <input
+                type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-cyan-400"
+              />
+              <span>
+                Ho letto e accetto le{" "}
+                {onNavigate
+                  ? <button type="button" onClick={() => onNavigate("condizioni")} className="text-cyan-400 underline">Condizioni di vendita</button>
+                  : "Condizioni di vendita"}{" "}
+                e la{" "}
+                {onNavigate
+                  ? <button type="button" onClick={() => onNavigate("privacy")} className="text-cyan-400 underline">Privacy Policy</button>
+                  : "Privacy Policy"}.
+                I prodotti sono personalizzati: non è previsto il diritto di recesso.
+              </span>
+            </label>
+            <Button onClick={checkout} disabled={busy || !accepted} className="mt-4 w-full justify-center">
               {busy ? "Reindirizzamento a Stripe…" : <>Paga con Stripe <Icon name="arrow" size={16} /></>}
             </Button>
           </div>
