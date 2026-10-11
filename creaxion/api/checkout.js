@@ -14,7 +14,10 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { items } = req.body || {};
+    const { items, terms } = req.body || {};
+    if (terms !== true) {
+      return res.status(400).json({ error: "Devi accettare le Condizioni di vendita e la Privacy Policy" });
+    }
     // Stripe ammette max 50 voci di metadata: 3 per riga + 2 extra
     if (!Array.isArray(items) || items.length === 0 || items.length > 15) {
       return res.status(400).json({ error: "Carrello vuoto o non valido (max 15 righe)" });
@@ -53,14 +56,14 @@ export default async function handler(req, res) {
       });
 
       const n = i + 1;
-      metadata[`r${n}_prodotto`] = product.name;
+      metadata[`r${n}_prodotto`] = `${qty} × ${product.name} (${product.unit})`.slice(0, 500);
       metadata[`r${n}_note`] = note.slice(0, 480);
       metadata[`r${n}_file`] = files.join(" ").slice(0, 500);
     });
 
     // Spedizione (con bollo incluso quando dovuto)
     const ship = calcShipping(subtotal);
-       let shippingName = "Standard (inclusa)";
+    let shippingName = "Standard (inclusa)";
     if (ship.total > 0) {
       shippingName = ship.bollo
         ? `Standard: ${euro(SHIPPING.cost)} + imposta di bollo ${euro(SHIPPING.bollo)}`
@@ -68,6 +71,7 @@ export default async function handler(req, res) {
     }
     metadata.bollo_incluso = ship.bollo ? "si" : "no";
     metadata.regime = "forfettario - operazione senza IVA";
+    metadata.condizioni_accettate = `si - ${new Date().toISOString()}`;
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
 
@@ -87,6 +91,24 @@ export default async function handler(req, res) {
       metadata,
       payment_intent_data: { metadata },
       phone_number_collection: { enabled: true },
+      // Dati per la fattura elettronica (tutti facoltativi)
+      custom_fields: [
+        {
+          key: "partita_iva",
+          label: { type: "custom", custom: "Partita IVA (se sei un'azienda)" },
+          type: "text", optional: true, text: { maximum_length: 20 },
+        },
+        {
+          key: "codice_fiscale",
+          label: { type: "custom", custom: "Codice fiscale" },
+          type: "text", optional: true, text: { maximum_length: 20 },
+        },
+        {
+          key: "sdi_pec",
+          label: { type: "custom", custom: "Codice destinatario SDI o PEC" },
+          type: "text", optional: true, text: { maximum_length: 80 },
+        },
+      ],
       shipping_address_collection: { allowed_countries: ["IT"] },
       billing_address_collection: "required",
       success_url: `${origin}/?checkout=success`,
