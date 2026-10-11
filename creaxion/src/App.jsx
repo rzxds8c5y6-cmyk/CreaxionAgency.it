@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { ShopPage } from "./Shop.jsx";
+import { CondizioniVendita } from "./Condizioni.jsx";
+import { PrivacyPolicy } from "./Privacy.jsx";
 
 // ─── DATA ──────────────────────────────────────────────────────────────────────
 
@@ -995,7 +997,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const titles = { agenzia: "Agenzia", servizi: "Servizi", clienti: "Clienti", progetti: "Progetti", processo: "Processo", contatti: "Contatti", shop: "Shop", privacy: "Privacy Policy" };
+    const titles = { agenzia: "Agenzia", servizi: "Servizi", clienti: "Clienti", progetti: "Progetti", processo: "Processo", contatti: "Contatti", shop: "Shop", privacy: "Privacy Policy", condizioni: "Condizioni di vendita" };
     document.title = `${titles[page] ?? "Home"} — CreaXion Agency`;
   }, [page]);
 
@@ -1009,7 +1011,8 @@ export default function App() {
       case "processo": return <ProcessoPage {...props} />;
       case "shop":     return <ShopPage setPage={navigate} />;
       case "contatti": return <ContattiPage />;
-      case "privacy":  return <PrivacyPage />;
+      case "privacy":  return <PrivacyPolicy />;
+      case "condizioni": return <CondizioniVendita />;
       default:         return <HomePage    {...props} />;
     }
   }, [page, navigate]);
@@ -1022,6 +1025,7 @@ export default function App() {
         <div className="absolute bottom-1/3 left-0 h-64 w-64 animate-[glowPulse_4s_ease-in-out_infinite_3s] rounded-full bg-cyan-500/6 blur-3xl" />
       </div>
       <Header page={page} setPage={navigate} />
+                  <button onClick={() => setPage("condizioni")} className="hover:text-cyan-400 transition-colors">Condizioni di vendita</button>
       <main className="relative" id="main-content">{currentPage}</main>
       <Footer setPage={navigate} />
       {!cookieAccepted && (
