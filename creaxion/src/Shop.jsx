@@ -154,7 +154,13 @@ export function ShopPage({ setPage }) {
           onAdd={(item) => { cart.add(item); setSelected(null); setCartOpen(true); }}
         />
       )}
-      {cartOpen && <CartDrawer cart={cart} onClose={() => setCartOpen(false)} />}
+            {cartOpen && (
+        <CartDrawer
+          cart={cart}
+          onClose={() => setCartOpen(false)}
+          onNavigate={setPage ? (p) => { setCartOpen(false); setPage(p); } : undefined}
+        />
+      )}
     </Container>
   );
 }
